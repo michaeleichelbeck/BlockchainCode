@@ -11,6 +11,14 @@ import (
 type SimpleAsset struct {
 }
 
+
+// main function starts up the chaincode in the container during instantiate
+func main() {
+    if err := shim.Start(new(SimpleAsset)); err != nil {
+            fmt.Printf("Error starting SimpleAsset chaincode: %s", err)
+    }
+}
+
 // Init is called during chaincode instantiation to initialize any
 // data. Note that chaincode upgrade also calls this function to reset
 // or to migrate data.
@@ -81,11 +89,4 @@ func get(stub shim.ChaincodeStubInterface, args []string) (string, error) {
             return "", fmt.Errorf("Asset not found: %s", args[0])
     }
     return string(value), nil
-}
-
-// main function starts up the chaincode in the container during instantiate
-func main() {
-    if err := shim.Start(new(SimpleAsset)); err != nil {
-            fmt.Printf("Error starting SimpleAsset chaincode: %s", err)
-    }
 }
