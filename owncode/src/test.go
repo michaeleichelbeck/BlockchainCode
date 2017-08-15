@@ -1,91 +1,112 @@
+/*
+Copyright IBM Corp 2016 All Rights Reserved.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+		 http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package main
 
 import (
-    "fmt"
+	"errors"
+	"fmt"
 
-    "github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
-// SimpleAsset implements a simple chaincode to manage an asset
-type SimpleAsset struct {
+// SimpleChaincode example simple Chaincode implementation
+type SimpleChaincode struct {
 }
 
-
-// main function starts up the chaincode in the container during instantiate
 func main() {
-    if err := shim.Start(new(SimpleAsset)); err != nil {
-            fmt.Printf("Error starting SimpleAsset chaincode: %s", err)
-    }
+	err := shim.Start(new(SimpleChaincode))
+	if err != nil {
+		fmt.Printf("Error starting Simple chaincode: %s", err)
+	}
 }
 
-// Init is called during chaincode instantiation to initialize any
-// data. Note that chaincode upgrade also calls this function to reset
-// or to migrate data.
-func (t *SimpleAsset) Init(stub shim.ChaincodeStubInterface) ([]byte, error) {
-    // Get the args from the transaction proposal
-    args := stub.GetStringArgs()
-    if len(args) != 2 {
-            return shim.Error("Incorrect arguments. Expecting a key and a value")
-    }
+// Init resets all the things
+func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+	if len(args) != 1 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+	}
 
-    // Set up any variables or assets here by calling stub.PutState()
+	err := stub.PutState("ChaincodeOwner", []byte(args[0]))
+	if err != nil {
+		return nil, err
+	}
 
-    // We store the key and the value on the ledger
-    err := stub.PutState(args[0], []byte(args[1]))
-    if err != nil {
-            return shim.Error(fmt.Sprintf("Failed to create asset: %s", args[0]))
-    }
-    return nil, nil
+	return nil, nil
 }
 
-// Invoke is called per transaction on the chaincode. Each transaction is
-// either a 'get' or a 'set' on the asset created by Init function. The Set
-// method may create a new asset by specifying a new key-value pair.
-func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) ([]byte, error) {
-    // Extract the function and args from the transaction proposal
-    fn, args := stub.GetFunctionAndParameters()
+// Invoke isur entry point to invoke a chaincode function
+func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+	fmt.Println("invoke is running " + function)
 
-    var result string
-    var err error
-    if fn == "set" {
-            result, err = set(stub, args)
-    } else { // assume 'get' even if fn is nil
-            result, err = get(stub, args)
-    }
-    if err != nil {
-            return shim.Error(err.Error())
-    }
+	// Handle different functions
+	if function == "init" {
+		return t.Init(stub, "init", args)
+	} else if function == "ContainerHistorian" {
+		return t.write(stub, args)
+	}
+	fmt.Println("invoke did not find func: " + function)
 
-    // Return the result as success payload
-    return []byte(result), nil
+	return nil, errors.New("Received unknown function invocation: " + function)
 }
 
-// Set stores the asset (both key and value) on the ledger. If the key exists,
-// it will override the value with the new one
-func set(stub shim.ChaincodeStubInterface, args []string) (string, error) {
-    if len(args) != 2 {
-            return "", fmt.Errorf("Incorrect arguments. Expecting a key and a value")
-    }
+// Query is our entry point for queries
+func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+	fmt.Println("query is running " + function)
 
-    err := stub.PutState(args[0], []byte(args[1]))
-    if err != nil {
-            return "", fmt.Errorf("Failed to set asset: %s", args[0])
-    }
-    return args[1], nil
+	// Handle different functions
+	if function == "read" { //read a variable
+		return t.read(stub, args)
+	}
+	fmt.Println("query did not find func: " + function)
+
+	return nil, errors.New("Received unknown function query: " + function)
 }
 
-// Get returns the value of the specified asset key
-func get(stub shim.ChaincodeStubInterface, args []string) (string, error) {
-    if len(args) != 1 {
-            return "", fmt.Errorf("Incorrect arguments. Expecting a key")
-    }
+// write - invoke function to write key/value pair
+func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	var key, value string
+	var err error
+	fmt.Println("running write()")
 
-    value, err := stub.GetState(args[0])
-    if err != nil {
-            return "", fmt.Errorf("Failed to get asset: %s with error: %s", args[0], err)
-    }
-    if value == nil {
-            return "", fmt.Errorf("Asset not found: %s", args[0])
-    }
-    return string(value), nil
+	if len(args) != 2 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 2. name of the key and value to set")
+	}
+
+	key = args[0] //rename for funsies
+	value = args[1]
+	err = stub.PutState(key, []byte(value)) //write the variable into the chaincode state
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+// read - query function to read key/value pair
+func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	var key, jsonResp string
+	var err error
+
+	if len(args) != 1 {
+		return nil, errors.New("Incorrect number of arguments. Expecting name of the key to query")
+	}
+
+	key = args[0]
+	valAsbytes, err := stub.GetState(key)
+	if err != nil {
+		jsonResp = "{\"Error\":\"Failed to get state for " + key + "\"}"
+		return nil, errors.New(jsonResp)
+	}
+
+	return valAsbytes, nil
 }
