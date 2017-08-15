@@ -22,7 +22,7 @@ func main() {
 // Init is called during chaincode instantiation to initialize any
 // data. Note that chaincode upgrade also calls this function to reset
 // or to migrate data.
-func (t *SimpleAsset) Init(stub shim.ChaincodeStubInterface) peer.Response {
+func (t *SimpleAsset) Init(stub shim.ChaincodeStubInterface) pb.Response {
     // Get the args from the transaction proposal
     args := stub.GetStringArgs()
     if len(args) != 2 {
@@ -42,7 +42,7 @@ func (t *SimpleAsset) Init(stub shim.ChaincodeStubInterface) peer.Response {
 // Invoke is called per transaction on the chaincode. Each transaction is
 // either a 'get' or a 'set' on the asset created by Init function. The Set
 // method may create a new asset by specifying a new key-value pair.
-func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
+func (t *SimpleAsset) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
     // Extract the function and args from the transaction proposal
     fn, args := stub.GetFunctionAndParameters()
 
