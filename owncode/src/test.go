@@ -213,14 +213,14 @@ func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, ar
 	customerAccountUpdate, _ := json.Marshal(customerAccount)
 	err = stub.PutState(customerAccount.Id, customerAccountUpdate)
 	if err != nil {
-		return errors.New(err.Error())
+		return nil, errors.New(err.Error())
 	}
 	
 	//rewrite operatorAccount
 	operatorAccountUpdate, _ := json.Marshal(operatorAccount)
 	err = stub.PutState(operatorAccount.Id, operatorAccountUpdate)
 	if err != nil {
-		return errors.New(err.Error())
+		return nil, errors.New(err.Error())
 	}
 	
 	//rewrite order
@@ -228,7 +228,7 @@ func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, ar
 	orderJSONToUpdate, _ := json.Marshal(orderToUpdate)
 	err = stub.PutState(orderid, orderJSONToUpdate)
 	if err != nil {
-		return errors.New(err.Error())
+		return nil, errors.New(err.Error())
 	}
 
 	return []byte("Status changed and transaction executed."), nil
