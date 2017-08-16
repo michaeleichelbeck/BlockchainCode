@@ -42,7 +42,7 @@ type Order struct {
 	Content string `json:"Content"`
 	Destination string `json:"Destination"`
 	Status string `json:"Status"`
-	DefinedTransactions [3][2]string `json:"DefinedTransactionss"`
+	//DefinedTransactions [3][2]string `json:"DefinedTransactions"`
 }
 
 func main() {
@@ -187,10 +187,15 @@ func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, ar
 	} else {
 		return nil, errors.New("Wrong status. Possible are Beacon1, Beacon2 and Beacon3")
 	}			
+	/*
 	operatorAccountId := orderToUpdate.DefinedTransactions[i][0]
 	auxvalue, err := strconv.ParseFloat(orderToUpdate.DefinedTransactions[i][1], 32)
 	paymentAmount := float32(auxvalue)
-
+	*/
+	operatorAccountId := "Operator1"
+	var paymentAmount float32 = 20.00
+	
+	
 		//get operator account
 	operatoraccountAsBytes, err := stub.GetState(operatorAccountId)
 	if err != nil {
