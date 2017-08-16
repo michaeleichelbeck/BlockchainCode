@@ -25,23 +25,23 @@ type SimpleChaincode struct {
 }
 
 type Container struct {
-	Id string
-	Owner string
+	Id string `json:"ContainerId"`
+	Owner string `json:"Owner"`
 }
 
 type Account struct {
-	Id string
-	Balance float32	
+	Id string `json:"AccountId"`
+	Balance float32	`json:"Balance"`
 }
 
 type Order struct {
-	Id string
-	Container string 
-	Customer string
-	Content string
-	Destination string
-	Status string
-	DefinedTransactions map[string] map[string] float32
+	Id string `json:"OrderId"`
+	Container string `json:"Container"`
+	Customer string `json:"Customer"`
+	Content string `json:"Content"`
+	Destination string `json:"Destination"`
+	Status string `json:"Status"`
+	DefinedTransactions [3][3]string `json:"DefinedTransactionss"`
 }
 
 func main() {
@@ -101,41 +101,41 @@ func (t *SimpleChaincode) SetAsset(stub shim.ChaincodeStubInterface, args []stri
 		
 	assettype := args[0]
 	if assettype == "Order" {
-		var newasset Order
-		err := json.Unmarshal([]byte(args[1]), &newasset)
+		var neworder Order
+		err := json.Unmarshal([]byte(args[1]), &neworder)
 		if err != nil {
 			return nil, errors.New("Your Order seems to have incorrect parameters")
 		}
-		assetAsBytes, _ := json.Marshal(newasset)                      
-		err = stub.PutState(newasset.Id, assetAsBytes)
+		assetAsBytes, _ := json.Marshal(neworder)                      
+		err = stub.PutState(neworder.Id, assetAsBytes)
 		if err != nil {
 			return nil, errors.New("Unable to place Order.")
 		}
 	} else if assettype == "Account" {
-		var newasset Account
-		err := json.Unmarshal([]byte(args[1]), &newasset)
+		var newacc Account
+		err := json.Unmarshal([]byte(args[1]), &newacc)
 		if err != nil {
 			return nil, errors.New("Your Account seems to have incorrect parameters")
 		}
-		assetAsBytes, _ := json.Marshal(newasset)                      
-		err = stub.PutState(newasset.Id, assetAsBytes)
+		assetAsBytes, _ := json.Marshal(newacc)                      
+		err = stub.PutState(newacc.Id, assetAsBytes)
 		if err != nil {
 			return nil, errors.New("Unable to create Account.")
 		}
 	} else if assettype == "Container" {
-		var newasset Container
-		err := json.Unmarshal([]byte(args[1]), &newasset)
+		var newcont Container
+		err := json.Unmarshal([]byte(args[1]), &newcont)
 		if err != nil {
 			return nil, errors.New("Your Container seems to have incorrect parameters")
 		}
-		assetAsBytes, _ := json.Marshal(newasset)                      
-		err = stub.PutState(newasset.Id, assetAsBytes)
+		assetAsBytes, _ := json.Marshal(newcont)                      
+		err = stub.PutState(newcont.Id, assetAsBytes)
 		if err != nil {
 			return nil, errors.New("Unable to create Container.")
 		}
 	}
 	
-	return []byte("A new Order was placed!"), nil
+	return []byte("A new asset was created!"), nil
 }
 
 
