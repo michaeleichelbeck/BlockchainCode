@@ -75,6 +75,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.SetAsset(stub, args)
 	} else if function == "ContainerHistorian" {
 		return t.write(stub, args)
+	} else if function == "UpdateOrderStatus" {
+		return t.UpdateOrderStatus(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function)
 
