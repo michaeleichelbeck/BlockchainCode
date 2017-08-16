@@ -41,7 +41,7 @@ type Order struct {
 	Content string `json:"Content"`
 	Destination string `json:"Destination"`
 	Status string `json:"Status"`
-	DefinedTransactions [3][3]string `json:"DefinedTransactionss"`
+	DefinedTransactions [3][2]string `json:"DefinedTransactionss"`
 }
 
 func main() {
@@ -136,6 +136,101 @@ func (t *SimpleChaincode) SetAsset(stub shim.ChaincodeStubInterface, args []stri
 	}
 	
 	return []byte("A new asset was created!"), nil
+}
+
+func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+
+	if len(args) != 2 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 2. Oder ID and Status")
+	}
+
+	orderid := args[0]
+	orderstatus := args[1]
+	
+	orderAsBytes, err := stub.GetState(orderid)
+	if err != nil {
+		return nil, errors.New("Failed to get Order:" + err.Error())
+	} else if orderAsBytes == nil {
+		return nil, errors.New("Order does not exist")
+	}
+
+	orderToUpdate := Order{}
+	err = json.Unmarshal(orderAsBytes, &orderToUpdate)
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
+	
+	//transaction execution
+		//get customer account
+	customeraccountAsBytes, err := stub.GetState(orderToUpdate.Customer)
+	if err != nil {
+		return nil, errors.New("Failed to get Customer Account:" + err.Error())
+	} else if customeraccountAsBytes == nil {
+		return nil, errors.New("Customer Account does not exist")
+	}
+	
+	customerAccount := Account{}
+	err = json.Unmarshal(customeraccountAsBytes, &customerAccount)
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
+	
+		//get operator account id and payment amount
+	var operatorAccoundId string
+	var paymentAmount float32
+	i := 0
+	if orderstatus == "Beacon1" {
+		i = 0
+	} else if orderstatus == "Beacon2" {
+		i = 1
+	} else if orderstatus == "Beacon3" {
+		i = 2
+	} else {
+		return nil, errors.New("Wrong status. Possible are Beacon1, Beacon2 and Beacon3")
+	}			
+	operatorAccoundId = orderToUpdate.DefinedTransactions[i][0]
+	paymentAmount = float32(orderToUpdate.DefinedTransactions[i][1])
+
+		//get operator account
+	operatoraccountAsBytes, err := stub.GetState(operatorAccountId)
+	if err != nil {
+		return nil, errors.New("Failed to get Operator Account:" + err.Error())
+	} else if operatoraccountAsBytes == nil {
+		return nil, errors.New("Opewrator Account does not exist")
+	}
+	
+	operatorAccount := Account{}
+	err = json.Unmarshal(operatoraccountAsBytes, &operatorAccount)
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}	
+		
+	customerAccount.Balance = string(float32(customerAccount.Balance) - paymentAmount)
+	operatorAccount.Balance = string(float32(operatorAccount.Balance) + paymentAmount)
+
+
+	//rewrite customerAccount
+	customerAccountUpdate, _ := json.Marshal(customerAccount)
+	err = stub.PutState(customerAccount.Id, customerAccountUpdate)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	
+	//rewrite operatorAccount
+	operatorAccountUpdate, _ := json.Marshal(operatorAccount)
+	err = stub.PutState(operatorAccount.Id, operatorAccountUpdate)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	
+	//rewrite order
+	orderToUpdate.Status = orderstatus
+	orderJSONToUpdate, _ := json.Marshal(orderToUpdate)
+	err = stub.PutState(orderid, orderJSONToUpdate)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
 }
 
 
