@@ -176,8 +176,6 @@ func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, ar
 	}
 	
 		//get operator account id and payment amount
-	var operatorAccoundId string
-	var paymentAmount float32
 	i := 0
 	if orderstatus == "Beacon1" {
 		i = 0
@@ -188,8 +186,9 @@ func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, ar
 	} else {
 		return nil, errors.New("Wrong status. Possible are Beacon1, Beacon2 and Beacon3")
 	}			
-	operatorAccoundId = orderToUpdate.DefinedTransactions[i][0]
-	paymentAmount = float32(orderToUpdate.DefinedTransactions[i][1])
+	operatorAccoundId := orderToUpdate.DefinedTransactions[i][0]
+	auxvalue, err := strconv.ParseFloat(orderToUpdate.DefinedTransactions[i][1], 32)
+	paymentAmount := float32(auxvalue)
 
 		//get operator account
 	operatoraccountAsBytes, err := stub.GetState(operatorAccountId)
@@ -204,23 +203,24 @@ func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, ar
 	if err != nil {
 		return nil, errors.New(err.Error())
 	}	
-		
-	customerAccount.Balance = string(float32(customerAccount.Balance) - paymentAmount)
-	operatorAccount.Balance = string(float32(operatorAccount.Balance) + paymentAmount)
+	
+		//calculate new balances
+	customerAccount.Balance = customerAccount.Balance - paymentAmount
+	operatorAccount.Balance = operatorAccount.Balance + paymentAmount
 
 
 	//rewrite customerAccount
 	customerAccountUpdate, _ := json.Marshal(customerAccount)
 	err = stub.PutState(customerAccount.Id, customerAccountUpdate)
 	if err != nil {
-		return shim.Error(err.Error())
+		return errors.New(err.Error())
 	}
 	
 	//rewrite operatorAccount
 	operatorAccountUpdate, _ := json.Marshal(operatorAccount)
 	err = stub.PutState(operatorAccount.Id, operatorAccountUpdate)
 	if err != nil {
-		return shim.Error(err.Error())
+		return errors.New(err.Error())
 	}
 	
 	//rewrite order
@@ -228,7 +228,7 @@ func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, ar
 	orderJSONToUpdate, _ := json.Marshal(orderToUpdate)
 	err = stub.PutState(orderid, orderJSONToUpdate)
 	if err != nil {
-		return shim.Error(err.Error())
+		return errors.New(err.Error())
 	}
 
 }
