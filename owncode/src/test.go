@@ -138,27 +138,6 @@ func (t *SimpleChaincode) SetAsset(stub shim.ChaincodeStubInterface, args []stri
 	return []byte("A new Order was placed!"), nil
 }
 
-func (t *SimpleChaincode) SetAccount(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
-	
-	if len(args) != 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 1")
-	}
-	
-	var newaccount Account
-	err := json.Unmarshal([]byte(args[0]), &newaccount)
-	if err != nil {
-		return nil, errors.New("Your account seems to have incorrect parameters")
-	}
-	
-	accAsBytes, _ := json.Marshal(newaccount)                         //convert to array of bytes
-	err = stub.PutState(newaccount.Name, accAsBytes)
-	if err != nil {
-		return nil, errors.New("Unable to set Account.")
-	}
-	
-	return []byte("A new Account was created!"), nil
-}
-
 
 // write - invoke function to write key/value pair
 func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
