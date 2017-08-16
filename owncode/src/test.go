@@ -16,12 +16,32 @@ package main
 import (
 	"errors"
 	"fmt"
-
+	"encoding/json"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
+}
+
+type Container struct {
+	Id string
+	Owner string
+}
+
+type Account struct {
+	Id string
+	Balance float32	
+}
+
+type Order struct {
+	Id string
+	Container string 
+	Customer string
+	Content string
+	Destination string
+	Status string
+	DefinedTransactions map[string] map[string] float32
 }
 
 func main() {
@@ -50,8 +70,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	fmt.Println("invoke is running " + function)
 
 	// Handle different functions
-	if function == "init" {
-		return t.Init(stub, "init", args)
+	if function == "SetAsset" {
+		return t.SetAsset(stub, args)
 	} else if function == "ContainerHistorian" {
 		return t.write(stub, args)
 	}
@@ -66,12 +86,62 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 
 	// Handle different functions
 	if function == "read" { //read a variable
-		return t.read(stub, args)
+		return Read(stub, args)
 	}
 	fmt.Println("query did not find func: " + function)
 
 	return nil, errors.New("Received unknown function query: " + function)
 }
+
+func (t *SimpleChaincode) SetAsset(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
+	
+	if len(args) != 2 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 2")
+	}
+	
+	assettype := args[0]
+	if assettype == "Order" {
+		var newasset Order
+	} else if assettype == "Account" {
+		var newasset Account
+	} else if assettype == "Container" {
+		var newasset Container
+	}
+	err := json.Unmarshal([]byte(args[1]), &newasset)
+	if err != nil {
+		return nil, errors.New("Your asset seems to have incorrect parameters")
+	}
+	
+	assetAsBytes, _ := json.Marshal(newasset)                         //convert to array of bytes
+	err = stub.PutState(newasset.Id, assetAsBytes)
+	if err != nil {
+		return nil, errors.New("Unable to place Order.")
+	}
+	
+	return []byte("A new Order was placed!"), nil
+}
+
+func (t *SimpleChaincode) SetAccount(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
+	
+	if len(args) != 1 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+	}
+	
+	var newaccount Account
+	err := json.Unmarshal([]byte(args[0]), &newaccount)
+	if err != nil {
+		return nil, errors.New("Your account seems to have incorrect parameters")
+	}
+	
+	accAsBytes, _ := json.Marshal(newaccount)                         //convert to array of bytes
+	err = stub.PutState(newaccount.Name, accAsBytes)
+	if err != nil {
+		return nil, errors.New("Unable to set Account.")
+	}
+	
+	return []byte("A new Account was created!"), nil
+}
+
 
 // write - invoke function to write key/value pair
 func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
@@ -93,7 +163,7 @@ func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string)
 }
 
 // read - query function to read key/value pair
-func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func Read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	var key, jsonResp string
 	var err error
 
