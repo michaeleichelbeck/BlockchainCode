@@ -98,26 +98,41 @@ func (t *SimpleChaincode) SetAsset(stub shim.ChaincodeStubInterface, args []stri
 	if len(args) != 2 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 2")
 	}
-	
-	var newasset Order
-	
+		
 	assettype := args[0]
 	if assettype == "Order" {
-		newasset = Order(newasset)
+		var newasset Order
+		err := json.Unmarshal([]byte(args[1]), &newasset)
+		if err != nil {
+			return nil, errors.New("Your Order seems to have incorrect parameters")
+		}
+		assetAsBytes, _ := json.Marshal(newasset)                      
+		err = stub.PutState(newasset.Id, assetAsBytes)
+		if err != nil {
+			return nil, errors.New("Unable to place Order.")
+		}
 	} else if assettype == "Account" {
-		newasset = Account(newasset)
+		var newasset Account
+		err := json.Unmarshal([]byte(args[1]), &newasset)
+		if err != nil {
+			return nil, errors.New("Your Account seems to have incorrect parameters")
+		}
+		assetAsBytes, _ := json.Marshal(newasset)                      
+		err = stub.PutState(newasset.Id, assetAsBytes)
+		if err != nil {
+			return nil, errors.New("Unable to create Account.")
+		}
 	} else if assettype == "Container" {
-		newasset = Container(newasset)
-	}
-	err := json.Unmarshal([]byte(args[1]), &newasset)
-	if err != nil {
-		return nil, errors.New("Your asset seems to have incorrect parameters")
-	}
-	
-	assetAsBytes, _ := json.Marshal(newasset)                         //convert to array of bytes
-	err = stub.PutState(newasset.Id, assetAsBytes)
-	if err != nil {
-		return nil, errors.New("Unable to place Order.")
+		var newasset Container
+		err := json.Unmarshal([]byte(args[1]), &newasset)
+		if err != nil {
+			return nil, errors.New("Your Container seems to have incorrect parameters")
+		}
+		assetAsBytes, _ := json.Marshal(newasset)                      
+		err = stub.PutState(newasset.Id, assetAsBytes)
+		if err != nil {
+			return nil, errors.New("Unable to create Container.")
+		}
 	}
 	
 	return []byte("A new Order was placed!"), nil
