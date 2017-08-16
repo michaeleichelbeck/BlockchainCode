@@ -99,13 +99,15 @@ func (t *SimpleChaincode) SetAsset(stub shim.ChaincodeStubInterface, args []stri
 		return nil, errors.New("Incorrect number of arguments. Expecting 2")
 	}
 	
+	var newasset Order
+	
 	assettype := args[0]
 	if assettype == "Order" {
-		var newasset Order
+		newasset = Order(newasset)
 	} else if assettype == "Account" {
-		var newasset Account
+		newasset = Account(newasset)
 	} else if assettype == "Container" {
-		var newasset Container
+		newasset = Container(newasset)
 	}
 	err := json.Unmarshal([]byte(args[1]), &newasset)
 	if err != nil {
