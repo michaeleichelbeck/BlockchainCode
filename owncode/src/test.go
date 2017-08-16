@@ -177,6 +177,7 @@ func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, ar
 	}
 	
 		//get operator account id and payment amount
+	/*
 	i := 0
 	if orderstatus == "Beacon1" {
 		i = 0
@@ -187,7 +188,7 @@ func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, ar
 	} else {
 		return nil, errors.New("Wrong status. Possible are Beacon1, Beacon2 and Beacon3")
 	}			
-	/*
+	
 	operatorAccountId := orderToUpdate.DefinedTransactions[i][0]
 	auxvalue, err := strconv.ParseFloat(orderToUpdate.DefinedTransactions[i][1], 32)
 	paymentAmount := float32(auxvalue)
