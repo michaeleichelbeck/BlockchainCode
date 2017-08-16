@@ -231,6 +231,8 @@ func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, ar
 		return errors.New(err.Error())
 	}
 
+	return []byte("Status changed and transaction executed."), nil
+	
 }
 
 
