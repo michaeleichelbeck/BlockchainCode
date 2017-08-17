@@ -316,17 +316,17 @@ func (t *SimpleChaincode) GetHistoryForAsset(stub shim.ChaincodeStubInterface, a
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
 	}
 
-	marbleName := args[0]
+	assetName := args[0]
 
-	fmt.Printf("- start getHistoryForAsset: %s\n", marbleName)
+	fmt.Printf("- start getHistoryForAsset: %s\n", assetName)
 
-	resultsIterator, err := stub.GetHistoryForKey(marbleName)
+	resultsIterator, err := stub.GetHistoryForKey(assetName)
 	if err != nil {
 		return nil, errors.New(err.Error())
 	}
 	defer resultsIterator.Close()
 
-	// buffer is a JSON array containing historic values for the marble
+	// buffer is a JSON array containing historic values for the asset
 	var buffer bytes.Buffer
 	buffer.WriteString("[")
 
@@ -348,7 +348,7 @@ func (t *SimpleChaincode) GetHistoryForAsset(stub shim.ChaincodeStubInterface, a
 		buffer.WriteString(", \"Value\":")
 		// if it was a delete operation on given key, then we need to set the
 		//corresponding value null. Else, we will write the response.Value
-		//as-is (as the Value itself a JSON marble)
+		//as-is (as the Value itself a JSON asset)
 		if response.IsDelete {
 			buffer.WriteString("null")
 		} else {
