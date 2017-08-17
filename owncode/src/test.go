@@ -17,8 +17,8 @@ import (
 	"errors"
 	"fmt"
 	"encoding/json"
-	"bytes"
-	"time"
+	//"bytes"
+	//"time"
 	"strconv"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
@@ -94,8 +94,8 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 	// Handle different functions
 	if function == "read" { //read a variable
 		return Read(stub, args)
-	} else if function == "GetHistoryForAsset" {
-		return t.GetHistoryForAsset(stub, args)
+	//} else if function == "GetHistoryForAsset" {
+	//	return t.GetHistoryForAsset(stub, args)
 	}
 	fmt.Println("query did not find func: " + function)
 
