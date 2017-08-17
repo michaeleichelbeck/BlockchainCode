@@ -311,6 +311,7 @@ func Read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	return valAsbytes, nil
 }
 
+/* Error: shim.ChaincodeStubInterface has no method GetHistoryForKey. Propably an issue of the hyperledger fabric version...
 func (t *SimpleChaincode) GetHistoryForAsset(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 
 	if len(args) < 1 {
@@ -375,3 +376,4 @@ func (t *SimpleChaincode) GetHistoryForAsset(stub shim.ChaincodeStubInterface, a
 
 	return buffer.Bytes(), nil
 }
+*/
