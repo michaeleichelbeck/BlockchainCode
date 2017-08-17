@@ -159,7 +159,7 @@ func (t *SimpleChaincode) DeleteAsset(stub shim.ChaincodeStubInterface, args []s
 	assetAsBytes, err := stub.GetState(assetId)
 	if err != nil {
 		return nil, errors.New("Failed to get Asset:" + err.Error())
-	} else if orderAsBytes == nil {
+	} else if assetAsBytes == nil {
 		return nil, errors.New("Asset does not exist")
 	}
 	
