@@ -170,6 +170,7 @@ func (t *SimpleChaincode) DeleteAsset(stub shim.ChaincodeStubInterface, args []s
 
 	return []byte("The asset " + assetId + " was deleted!"), nil
 
+}
 
 func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 
