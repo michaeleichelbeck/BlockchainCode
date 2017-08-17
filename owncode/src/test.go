@@ -1,5 +1,5 @@
 /*
-Copyright IBM Corp 2016 All Rights Reserved.
+Copyright Capgemini 2017. All Rights Reserved.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -17,6 +17,8 @@ import (
 	"errors"
 	"fmt"
 	"encoding/json"
+	"bytes"
+	"time"
 	"strconv"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
@@ -42,7 +44,7 @@ type Order struct {
 	Content string `json:"Content"`
 	Destination string `json:"Destination"`
 	Status string `json:"Status"`
-	DefinedTransactions [10][3]string `json:"DefinedTransactions"`
+	DefinedTransactions [20][3]string `json:"DefinedTransactions"`
 }
 
 func main() {
@@ -77,7 +79,9 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.write(stub, args)
 	} else if function == "UpdateOrderStatus" {
 		return t.UpdateOrderStatus(stub, args)
-	}
+	} else if function == "DeleteAsset" {
+		return t.DeleteAsset(stub, args)
+	} 
 	fmt.Println("invoke did not find func: " + function)
 
 	return nil, errors.New("Received unknown function invocation: " + function)
@@ -90,6 +94,8 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 	// Handle different functions
 	if function == "read" { //read a variable
 		return Read(stub, args)
+	} else if function == "GetHistoryForAsset" {
+		return t.GetHistoryForAsset(stub, args)
 	}
 	fmt.Println("query did not find func: " + function)
 
@@ -141,6 +147,30 @@ func (t *SimpleChaincode) SetAsset(stub shim.ChaincodeStubInterface, args []stri
 	return []byte("A new asset was created!"), nil
 }
 
+
+func (t *SimpleChaincode) DeleteAsset(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+
+	if len(args) != 1 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 1: Asset ID")
+	}
+
+	assetId := args[0]
+	
+	assetAsBytes, err := stub.GetState(assetId)
+	if err != nil {
+		return nil, errors.New("Failed to get Asset:" + err.Error())
+	} else if orderAsBytes == nil {
+		return nil, errors.New("Asset does not exist")
+	}
+	
+	err = stub.DelState(assetId) //remove the asset from chaincode state
+	if err != nil {
+		return nil, errors.New("Failed to delete state:" + err.Error())
+	}
+
+	return []byte("The asset " + assetId + " was deleted!"), nil
+
+
 func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 
 	if len(args) != 2 {
@@ -186,46 +216,47 @@ func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, ar
 			i = k
 		}
 	}
-	if i == -1 {
-		return nil, errors.New("This status has not been denoted in the order definition")
-	}			
 	
-	operatorAccountId := orderToUpdate.DefinedTransactions[i][1]
-	auxvalue, err := strconv.ParseFloat(orderToUpdate.DefinedTransactions[i][2], 32)
-	paymentAmount := float32(auxvalue)
+	if i != -1 { //if tansaction is defined for this status
 		
+	
+		operatorAccountId := orderToUpdate.DefinedTransactions[i][1]
+		auxvalue, err := strconv.ParseFloat(orderToUpdate.DefinedTransactions[i][2], 32)
+		paymentAmount := float32(auxvalue)
+			
+			
+			//get operator account
+		operatoraccountAsBytes, err := stub.GetState(operatorAccountId)
+		if err != nil {
+			return nil, errors.New("Failed to get Operator Account:" + err.Error())
+		} else if operatoraccountAsBytes == nil {
+			return nil, errors.New("Operator Account does not exist")
+		}
 		
-		//get operator account
-	operatoraccountAsBytes, err := stub.GetState(operatorAccountId)
-	if err != nil {
-		return nil, errors.New("Failed to get Operator Account:" + err.Error())
-	} else if operatoraccountAsBytes == nil {
-		return nil, errors.New("Operator Account does not exist")
-	}
+		operatorAccount := Account{}
+		err = json.Unmarshal(operatoraccountAsBytes, &operatorAccount)
+		if err != nil {
+			return nil, errors.New(err.Error())
+		}	
+		
+			//calculate new balances
+		customerAccount.Balance = customerAccount.Balance - paymentAmount
+		operatorAccount.Balance = operatorAccount.Balance + paymentAmount
 	
-	operatorAccount := Account{}
-	err = json.Unmarshal(operatoraccountAsBytes, &operatorAccount)
-	if err != nil {
-		return nil, errors.New(err.Error())
-	}	
 	
-		//calculate new balances
-	customerAccount.Balance = customerAccount.Balance - paymentAmount
-	operatorAccount.Balance = operatorAccount.Balance + paymentAmount
-
-
-	//rewrite customerAccount
-	customerAccountUpdate, _ := json.Marshal(customerAccount)
-	err = stub.PutState(customerAccount.Id, customerAccountUpdate)
-	if err != nil {
-		return nil, errors.New(err.Error())
-	}
-	
-	//rewrite operatorAccount
-	operatorAccountUpdate, _ := json.Marshal(operatorAccount)
-	err = stub.PutState(operatorAccount.Id, operatorAccountUpdate)
-	if err != nil {
-		return nil, errors.New(err.Error())
+		//rewrite customerAccount
+		customerAccountUpdate, _ := json.Marshal(customerAccount)
+		err = stub.PutState(customerAccount.Id, customerAccountUpdate)
+		if err != nil {
+			return nil, errors.New(err.Error())
+		}
+		
+		//rewrite operatorAccount
+		operatorAccountUpdate, _ := json.Marshal(operatorAccount)
+		err = stub.PutState(operatorAccount.Id, operatorAccountUpdate)
+		if err != nil {
+			return nil, errors.New(err.Error())
+		}
 	}
 	
 	//rewrite order
@@ -260,7 +291,7 @@ func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string)
 	return nil, nil
 }
 
-// read - query function to read key/value pair
+// generic read - query function to read key/value pair
 func Read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	var key, jsonResp string
 	var err error
@@ -277,4 +308,69 @@ func Read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	}
 
 	return valAsbytes, nil
+}
+
+func (t *SimpleChaincode) GetHistoryForAsset(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+
+	if len(args) < 1 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+	}
+
+	marbleName := args[0]
+
+	fmt.Printf("- start getHistoryForAsset: %s\n", marbleName)
+
+	resultsIterator, err := stub.GetHistoryForKey(marbleName)
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
+	defer resultsIterator.Close()
+
+	// buffer is a JSON array containing historic values for the marble
+	var buffer bytes.Buffer
+	buffer.WriteString("[")
+
+	bArrayMemberAlreadyWritten := false
+	for resultsIterator.HasNext() {
+		response, err := resultsIterator.Next()
+		if err != nil {
+			return nil, errors.New(err.Error())
+		}
+		// Add a comma before array members, suppress it for the first array member
+		if bArrayMemberAlreadyWritten == true {
+			buffer.WriteString(",")
+		}
+		buffer.WriteString("{\"TxId\":")
+		buffer.WriteString("\"")
+		buffer.WriteString(response.TxId)
+		buffer.WriteString("\"")
+
+		buffer.WriteString(", \"Value\":")
+		// if it was a delete operation on given key, then we need to set the
+		//corresponding value null. Else, we will write the response.Value
+		//as-is (as the Value itself a JSON marble)
+		if response.IsDelete {
+			buffer.WriteString("null")
+		} else {
+			buffer.WriteString(string(response.Value))
+		}
+
+		buffer.WriteString(", \"Timestamp\":")
+		buffer.WriteString("\"")
+		buffer.WriteString(time.Unix(response.Timestamp.Seconds, int64(response.Timestamp.Nanos)).String())
+		buffer.WriteString("\"")
+
+		buffer.WriteString(", \"IsDelete\":")
+		buffer.WriteString("\"")
+		buffer.WriteString(strconv.FormatBool(response.IsDelete))
+		buffer.WriteString("\"")
+
+		buffer.WriteString("}")
+		bArrayMemberAlreadyWritten = true
+	}
+	buffer.WriteString("]")
+
+	fmt.Printf("- getHistoryForAsset returning:\n%s\n", buffer.String())
+
+	return buffer.Bytes(), nil
 }
