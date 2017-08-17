@@ -42,7 +42,7 @@ type Order struct {
 	Content string `json:"Content"`
 	Destination string `json:"Destination"`
 	Status string `json:"Status"`
-	DefinedTransactions [3][3]string `json:"DefinedTransactions"`
+	DefinedTransactions [10][3]string `json:"DefinedTransactions"`
 }
 
 func main() {
@@ -144,7 +144,7 @@ func (t *SimpleChaincode) SetAsset(stub shim.ChaincodeStubInterface, args []stri
 func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 
 	if len(args) != 2 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 2. Oder ID and Status")
+		return nil, errors.New("Incorrect number of arguments. Expecting 2. Order ID and Status")
 	}
 
 	orderid := args[0]
@@ -190,8 +190,8 @@ func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, ar
 		return nil, errors.New("This status has not been denoted in the order definition")
 	}			
 	
-	operatorAccountId := orderToUpdate.DefinedTransactions[i][0]
-	auxvalue, err := strconv.ParseFloat(orderToUpdate.DefinedTransactions[i][1], 32)
+	operatorAccountId := orderToUpdate.DefinedTransactions[i][1]
+	auxvalue, err := strconv.ParseFloat(orderToUpdate.DefinedTransactions[i][2], 32)
 	paymentAmount := float32(auxvalue)
 		
 		
@@ -200,7 +200,7 @@ func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, ar
 	if err != nil {
 		return nil, errors.New("Failed to get Operator Account:" + err.Error())
 	} else if operatoraccountAsBytes == nil {
-		return nil, errors.New("Opewrator Account does not exist")
+		return nil, errors.New("Operator Account does not exist")
 	}
 	
 	operatorAccount := Account{}
@@ -241,7 +241,7 @@ func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, ar
 }
 
 
-// write - invoke function to write key/value pair
+// generic write - invoke function to write key/value pair
 func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	var key, value string
 	var err error
