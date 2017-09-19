@@ -30,6 +30,7 @@ type SimpleChaincode struct {
 type Container struct {
 	Id string `json:"ContainerId"`
 	Owner string `json:"Owner"`
+	SensorData string `json:"SensorData"`
 }
 
 type Account struct {
@@ -57,7 +58,7 @@ func main() {
 // Init resets all the things
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	if len(args) != 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+		return nil, errors.New("Incorrect number of arguments. Expecting 1: ChaincodeOwner")
 	}
 
 	err := stub.PutState("ChaincodeOwner", []byte(args[0]))
@@ -81,6 +82,8 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 		return t.UpdateOrderStatus(stub, args)
 	} else if function == "DeleteAsset" {
 		return t.DeleteAsset(stub, args)
+	} else if function == "UpdateSensorData" {
+		return t.UpdateSensorData(stub, args)
 	} 
 	fmt.Println("invoke did not find func: " + function)
 
@@ -171,6 +174,39 @@ func (t *SimpleChaincode) DeleteAsset(stub shim.ChaincodeStubInterface, args []s
 	return []byte("The asset " + assetId + " was deleted!"), nil
 
 }
+
+func (t *SimpleChaincode) UpdateSensorData(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+
+	if len(args) != 2 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 2. Container ID and SensorData")
+	}
+
+	containerid := args[0]
+	sensordata := args[1]
+
+	containerAsBytes, err := stub.GetState(orderid)
+	if err != nil {
+		return nil, errors.New("Failed to get Container: " + err.Error())
+	} else if containerAsBytes == nil {
+		return nil, errors.New("Container does not exist")
+	}
+
+	containerToUpdate := Container{}
+	err = json.Unmarshal(containerAsBytes, &containerToUpdate)
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
+	
+	//rewrite container
+	containerToUpdate.SensorData = sensordata
+	containerJSONToUpdate, _ := json.Marshal(containerToUpdate)
+	err = stub.PutState(containerid, containerJSONToUpdate)
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
+
+	return []byte("New sensor data saved"), nil
+	
 
 func (t *SimpleChaincode) UpdateOrderStatus(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 
