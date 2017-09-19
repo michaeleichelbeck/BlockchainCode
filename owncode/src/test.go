@@ -76,7 +76,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	// Handle different functions
 	if function == "SetAsset" {
 		return t.SetAsset(stub, args)
-	} else if function == "ContainerHistorian" {
+	} else if function == "GenericWrite" {
 		return t.write(stub, args)
 	} else if function == "UpdateOrderStatus" {
 		return t.UpdateOrderStatus(stub, args)
